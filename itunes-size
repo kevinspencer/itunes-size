@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+# Copyright 2012 Kevin Spencer <kevin@kevinspencer.org>
+#
+# Permission to use, copy, modify, distribute, and sell this software and its
+# documentation for any purpose is hereby granted without fee, provided that
+# the above copyright notice appear in all copies and that both that
+# copyright notice and this permission notice appear in supporting
+# documentation.  No representations are made about the suitability of this
+# software for any purpose.  It is provided "as is" without express or 
+# implied warranty.
+#
+################################################################################
+
+use HTML::Entities;
+use Number::Bytes::Human qw(format_bytes);
+use strict;
+use warnings;
+
+our $VERSION = '0.02';
+
+my $user = getpwuid($<);
+my $library_path = "/Users/$user/Music/iTunes/iTunes Music Library.xml";
+open(my $fh, '<', $library_path) || die "Could not open $library_path - $!\n";
+my ($artist, $album, %list);
+my $totalsize  = 0;
+my $totalsongs = 0;
+my $totaltime  = 0;
+while (<$fh>) {
+    my $line = $_;
+    if ($line =~ /<key>Artist<\/key><string>(.+)<\/string>/) {
+        $artist = decode_entities($1);
+        $totalsongs++;
+    } elsif ($line =~ /<key>Size<\/key><integer>(\d+)<\/integer>/) {
+        $totalsize += $1;
+    } elsif ($line =~ /<key>Total Time<\/key><integer>(\d+)<\/integer>/) {
+        $totaltime += $1;
+    }
+}
+close($fh);
+my $humansize = format_bytes($totalsize);
+print "disk:   $humansize\n";
+print "tracks: $totalsongs\n";
+printf "days:   %d\n", (gmtime($totaltime))[7];
